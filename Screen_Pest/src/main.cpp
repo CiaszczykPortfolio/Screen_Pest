@@ -5,8 +5,11 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    auto w = FloatingWindowFactory();
-    if(w)
-        w->show();
+
+
+    QString rootDir = QCoreApplication::applicationDirPath() + "/../../objects";
+    MainWindow window(rootDir);
+    window.show();
+
     return a.exec();
 }
