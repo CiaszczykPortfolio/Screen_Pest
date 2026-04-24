@@ -1,6 +1,6 @@
 // ------------------------- mainwindow.cpp -------------------------
-#include "mainwindow.h"
-#include "subwindow.h"
+#include "MainWindow.h"
+#include "SpriteWindow.h"
 
 #include <QVBoxLayout>
 #include <QLabel>
@@ -92,7 +92,7 @@ void MainWindow::onItemDoubleClicked(QListWidgetItem *item)
 
     if (isNpc) {
         // Spawn a new autonomous NPC window
-        SubWindow *sub = new SubWindow(path);
+        SpriteWindow *sub = new SpriteWindow(path);
         sub->setWindowTitle(item->text());
         sub->setAttribute(Qt::WA_DeleteOnClose);
         sub->show();

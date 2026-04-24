@@ -15,16 +15,21 @@ find_package(LayerShellQt REQUIRED)
 
 set(PROJECT_SOURCES
         src/main.cpp
-        src/mainwindow.cpp
-        src/mainwindow.h
+        src/MainWindow.h src/MainWindow.cpp
         src/mainwindow.ui
-        src/subwindow.h src/subwindow.cpp
+
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(Screen_Pest
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
+        src/BehaviourData.h src/BehaviourData.cpp
+        src/SpriteAtlas.h src/SpriteAtlas.cpp
+        src/AnimationEngine.h src/AnimationEngine.cpp
+        src/ActionDispatcher.h src/ActionDispatcher.cpp
+        src/SpriteWindow.h src/SpriteWindow.cpp
+        ScreenPest.pro
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET Screen_Pest APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
