@@ -1,0 +1,28 @@
+app-id: io.github.ciaszczd.ScreenPest
+runtime: org.kde.Platform
+runtime-version: "6.10"
+sdk: org.kde.Sdk
+command: Screen_Pest
+
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=x11
+  - --share=ipc
+  - --device=dri
+
+modules:
+  - name: layershellqt
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DBUILD_TESTING=OFF
+    sources:
+      - type: git
+        url: https://invent.kde.org/plasma/layer-shell-qt.git
+        tag: v6.6.4
+
+  - name: Screen_Pest
+    buildsystem: cmake-ninja
+    sources:
+      - type: dir
+        path: .

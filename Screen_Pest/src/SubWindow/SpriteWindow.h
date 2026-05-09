@@ -1,11 +1,8 @@
-// spritewindow.h
-#ifndef SPRITEWINDOW_H
-#define SPRITEWINDOW_H
+#pragma once
 
 #include <QWidget>
 #include <QTimer>
 #include <QElapsedTimer>
-//#include <memory>  // if using unique_ptr
 
 class BehaviourData;
 class SpriteAtlas;
@@ -17,14 +14,19 @@ class SpriteWindow : public QWidget {
 public:
     explicit SpriteWindow(const QString &resourcePath, QWidget *parent = nullptr);
     ~SpriteWindow();
+    void moveBy(double dx, double dy);
 
 protected:
     void paintEvent(QPaintEvent *event) override;
+    void showEvent(QShowEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
 
 private slots:
     void tick();
 
 private:
+    QPoint m_screenPos;
+
     BehaviourData *m_data;       // or std::unique_ptr
     SpriteAtlas *m_atlas;
     AnimationEngine *m_engine;
@@ -34,5 +36,3 @@ private:
     QElapsedTimer m_elapsed;
     qint64 m_lastElapsed;
 };
-
-#endif

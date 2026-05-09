@@ -1,6 +1,5 @@
 // behaviourdata.h
-#ifndef BEHAVIOURDATA_H
-#define BEHAVIOURDATA_H
+#pragma once
 
 #include <QString>
 #include <QMap>
@@ -16,6 +15,11 @@ struct StateDef {
     QString animation;
     double durationMin = 2.0, durationMax = 5.0;
     QVector<Transition> transitions;
+
+    // Optional actions triggered automatically
+    QString onEnterAction;
+    QString onExitAction;
+    QString perTickAction;      // called every update while in this state
 };
 
 struct AnimationEvent {
@@ -44,5 +48,3 @@ public:
     QMap<QString, AnimationDef> animations;
     QMap<QString, StateDef> states;
 };
-
-#endif

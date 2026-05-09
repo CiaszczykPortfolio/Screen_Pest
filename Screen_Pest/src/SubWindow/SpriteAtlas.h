@@ -1,6 +1,5 @@
 // spriteatlas.h
-#ifndef SPRITEATLAS_H
-#define SPRITEATLAS_H
+#pragma once
 
 #include <QMap>
 #include <QString>
@@ -18,5 +17,3 @@ private:
     QMap<QString, QPixmap> m_pixmaps;
     QSize m_size;
 };
-
-#endif

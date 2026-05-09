@@ -1,33 +1,34 @@
-#ifndef ANIMATIONENGINE_H
-#define ANIMATIONENGINE_H
+#pragma once
 
-#include "BehaviourData.h"   // needs struct definitions
+#include "BehaviourData.h"
 #include <QString>
 #include <QRandomGenerator>
 
-class ActionDispatcher;  // forward
+class ActionDispatcher;
 
-class AnimationEngine {
+class AnimationEngine : public QObject
+{
+    Q_OBJECT
 public:
     AnimationEngine(const BehaviourData &data, ActionDispatcher &dispatcher);
-
     void reset();
     void update(double deltaTime);
 
     QString currentState;
-    int currentFrameIndex = 0;   // 0-based
+    int currentFrameIndex = 0;
+
+signals:
+    void frameAdvanced();
+    void nextFrameTimeout(int msec);
 
 private:
     const BehaviourData &m_data;
     ActionDispatcher &m_dispatcher;
-
     double m_stateTimer = 0;
     double m_frameTimer = 0;
     double m_currentFrameDuration = 0;
 
     void resetState(const QString &name);
-    void advanceFrame();
     void fireEvents(int frame);
+    void dispatchAction(const QString &action, const QVariantMap &params = {});
 };
-
-#endif

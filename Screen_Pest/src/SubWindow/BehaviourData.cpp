@@ -38,7 +38,10 @@ static const FieldMap<Transition> transMap {
 };
 
 static const FieldMap<StateDef> stateMap {
-    {{"animation", [](auto& sd, auto v){ sd.animation = v.toString(); }}}
+    {{"animation",      [](auto& sd, auto v){ sd.animation = v.toString(); }},
+     {"onEnterAction",  [](auto& sd, auto v){ sd.onEnterAction = v.toString(); }},
+     {"onExitAction",   [](auto& sd, auto v){ sd.onExitAction = v.toString(); }},
+     {"perTickAction",  [](auto& sd, auto v){ sd.perTickAction = v.toString(); }}}
 };
 
 bool BehaviourData::loadFromJson(const QString &jsonPath)
