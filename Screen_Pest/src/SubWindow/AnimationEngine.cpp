@@ -23,27 +23,42 @@ void AnimationEngine::reset() {
  * Wykonuje Exit action, rozpoczyna nowy stan, emituje
  * wywołuje akcję startową nowego stanu
  */
-void AnimationEngine::resetState(const QString &name) {
+void AnimationEngine::resetState(const QString &name)
+{
+    // Run exit action of previous state (if any)
     if (!currentState.isEmpty()) {
         const auto &oldState = m_data.states[currentState];
-        if (!oldState.onExitAction.isEmpty())
-            m_dispatcher.execute(oldState.onExitAction);
+        if (!oldState.onExitAction.name.isEmpty())
+            m_dispatcher.execute(oldState.onExitAction.name,
+                                 oldState.onExitAction.params);
     }
-
     currentState = name;
     const StateDef &sd = m_data.states[name];
-    m_stateTimer = sd.durationMin +
-                   QRandomGenerator::global()->generateDouble() * (sd.durationMax - sd.durationMin);
+    const AnimationDef &ad = m_data.animations[sd.animation];
+
+    // ---- Exact number of animation loops ----
+    if (!sd.loops.isEmpty() && sd.loops.size() == 2) {
+        int minLoops = sd.loops[0];
+        int maxLoops = sd.loops[1];
+        int chosen = minLoops + QRandomGenerator::global()->bounded(maxLoops - minLoops + 1);
+        double cycleLength = ad.frameCount / ad.fps;  // seconds per loop
+        m_stateTimer = chosen * cycleLength;
+    }
+    // ---- Normal random duration ----
+    else {
+        m_stateTimer = sd.durationMin +
+                       QRandomGenerator::global()->generateDouble() *
+                           (sd.durationMax - sd.durationMin);
+    }
+
+    // Frame setup
     currentFrameIndex = 0;
     m_frameTimer = 0;
+    m_currentFrameDuration = 1.0 / ad.fps;
 
-    const AnimationDef &ad = m_data.animations[sd.animation];
-    m_currentFrameDuration = 1.0 / ad.fps +
-                             QRandomGenerator::global()->generateDouble() * m_data.globalFrameJitter;
-
-    // Akcja wejściowa nowego stanu
-    if (!sd.onEnterAction.isEmpty())
-        m_dispatcher.execute(sd.onEnterAction);
+    // Run enter action of the new state
+    if (!sd.onEnterAction.name.isEmpty())
+        m_dispatcher.execute(sd.onEnterAction.name, sd.onEnterAction.params);
 
     emit frameAdvanced();
 }
@@ -60,10 +75,10 @@ void AnimationEngine::update(double deltaTime) {
     const AnimationDef &anim = m_data.animations[state.animation];
 
     // akcja na tick
-    if (!state.perTickAction.isEmpty()) {
-        QVariantMap params;
-        params["delta"] = deltaTime;
-        m_dispatcher.execute(state.perTickAction, params);
+    if (!state.perTickAction.name.isEmpty()) {
+        QVariantMap params = state.perTickAction.params; // copy
+        params["delta"] = deltaTime;   // always append delta
+        m_dispatcher.execute(state.perTickAction.name, params);
     }
 
     // timer stanu i przejścia
@@ -84,6 +99,7 @@ void AnimationEngine::update(double deltaTime) {
             // The frame timer for the new state is fresh; we can compute remaining time.
             double remaining = m_currentFrameDuration - m_frameTimer;
             if (remaining < 0.001) remaining = 0.001;
+            else if(remaining > 0.1) remaining = 0.1;
             emit nextFrameTimeout(static_cast<int>(remaining * 1000));
             return;
         } else {
@@ -110,13 +126,13 @@ void AnimationEngine::update(double deltaTime) {
         emit frameAdvanced();
 
         double base = 1.0 / anim.fps;
-        m_currentFrameDuration = base +
-                                 QRandomGenerator::global()->generateDouble() * m_data.globalFrameJitter;
+        m_currentFrameDuration = base;
     }
 
     // zaplanuj kolejny tick
     double remaining = m_currentFrameDuration - m_frameTimer;
     if (remaining < 0.001) remaining = 0.001;
+    else if(remaining > 0.1) remaining = 0.1;
     emit nextFrameTimeout(static_cast<int>(remaining * 1000));
 }
 

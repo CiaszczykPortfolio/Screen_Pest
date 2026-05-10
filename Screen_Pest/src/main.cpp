@@ -11,18 +11,18 @@
  */
 void registerDefaultActions()
 {
-    using namespace std::placeholders; // not needed here, but useful for binds
+    using namespace std::placeholders;
 
-    // Movement – uses the window's own speed and the delta from the engine
     ActionDispatcher::registerDefault("move",
                                       [](SpriteWindow &w, const QVariantMap &params) {
+                                          double dx = params.value("dx", 0.0).toDouble();
                                           double delta = params.value("delta", 0.0).toDouble();
-                                          double dx = delta*100;
-                                          fprintf( stderr, "move action: delta= %f dx= %f ", delta, dx);
-                                          w.moveBy(dx, 0);
+                                          dx *= delta*100;
+                                          double dy = params.value("dy", 0.0).toDouble();
+                                          dy *= delta*100;
+                                          w.moveBy(dx, -dy);
                                       });
 
-    // Cursor grab during jump (frame event)
     ActionDispatcher::registerDefault("grab_cursor",
                                       [](SpriteWindow &w, const QVariantMap &) {
                                           QApplication::setOverrideCursor(Qt::ClosedHandCursor);
@@ -34,15 +34,11 @@ void registerDefaultActions()
                                           QApplication::restoreOverrideCursor();
                                       });
 
-    // State enter/exit sounds or effects – you can fill them in later
     ActionDispatcher::registerDefault("sit_down",
                                       [](SpriteWindow &w, const QVariantMap &) {
-                                          fprintf( stderr, "kot siada");
-                                          // play sound, change cursor, etc.
                                       });
     ActionDispatcher::registerDefault("stand_up",
                                       [](SpriteWindow &w, const QVariantMap &) {
-                                          fprintf( stderr, "kot wstaje");
                                       });
     ActionDispatcher::registerDefault("start_cleaning",
                                       [](SpriteWindow &w, const QVariantMap &) {});
@@ -50,6 +46,13 @@ void registerDefaultActions()
                                       [](SpriteWindow &w, const QVariantMap &) {});
     ActionDispatcher::registerDefault("jump_sound",
                                       [](SpriteWindow &w, const QVariantMap &) {});
+
+    ActionDispatcher::registerDefault("play_animation",
+                                      [](SpriteWindow &w, const QVariantMap &params) {
+                                          QString anim = params.value("animation").toString();
+                                          if (!anim.isEmpty())
+                                              w.switchState(anim);
+                                      });
 }
 
 /* findObjectsDir: Znajduje gdzie jest
@@ -89,7 +92,7 @@ static QString findAssetsDir(const QString &appName)
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    fprintf(stderr, "=== stderr test ===\n");
+    //fprintf(stderr, "=== stderr test ===\n");
 
     a.setApplicationName("ScreenPest");
 

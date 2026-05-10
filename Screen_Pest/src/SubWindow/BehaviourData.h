@@ -11,15 +11,23 @@ struct Transition {
     double weight = 1.0;
 };
 
+struct ActionCall {
+    QString name;
+    QVariantMap params;
+};
+
 struct StateDef {
     QString animation;
     double durationMin = 2.0, durationMax = 5.0;
     QVector<Transition> transitions;
 
     // Optional actions triggered automatically
-    QString onEnterAction;
-    QString onExitAction;
-    QString perTickAction;      // called every update while in this state
+    ActionCall onEnterAction;
+    ActionCall onExitAction;
+    ActionCall perTickAction;      // called every update while in this state
+    ActionCall onMousePress;        // Wydarzenie na triggerowane wciśnięciem myszki
+
+    QVector<int> loops; //alternatywa dla duration
 };
 
 struct AnimationEvent {
@@ -42,7 +50,7 @@ public:
     QString name;
     double speed = 80.0;
     QString initialState;
-    double globalFrameJitter = 0.08;
+    double globalFrameJitter = 0.0;
     int scaleFactor = 16;
 
     QMap<QString, AnimationDef> animations;

@@ -47,6 +47,8 @@ SpriteWindow::SpriteWindow(const QString &resourcePath, QWidget *parent)
 
     m_screenPos = QPoint(500, 500);   // or any initial position you like
 
+    updateScreenGeometry();
+
     m_elapsed.start();
     m_lastElapsed = 0;
     m_engine->update(0.0);   // pierwszy trigger
@@ -56,10 +58,11 @@ SpriteWindow::SpriteWindow(const QString &resourcePath, QWidget *parent)
  * przesłania pokazanie okna z
  * dodaniem obsługi layer shell
  */
-void SpriteWindow::showEvent(QShowEvent *event) {
-    QWidget::showEvent(event);   // call base class first
+void SpriteWindow::showEvent(QShowEvent *event)
+{
+    QWidget::showEvent(event);   // najpierw zwykły show
 
-    // Configure layer-shell now that the native window is shown
+    // konfiguracja layer shell
     if (auto *shellWin = LayerShellQt::Window::get(windowHandle())) {
         shellWin->setLayer(LayerShellQt::Window::LayerOverlay);
         shellWin->setKeyboardInteractivity(
@@ -70,18 +73,60 @@ void SpriteWindow::showEvent(QShowEvent *event) {
     }
 }
 
+/*
+ * usuwanie widgetu prawym przyciskiem myszy
+ * obsługa mouse press event (zdarzeń json)
+ */
 void SpriteWindow::mousePressEvent(QMouseEvent *event) {
-    if (event->button() == Qt::RightButton) {
-        close();               // self‑destruct (WA_DeleteOnClose is set)
+    if (event->button() == Qt::LeftButton) {
+        // Execute the current state's onMousePress action (if any)
+        const auto &state = m_engine->currentState; // we need access to engine's state
+        //have engine return the current StateDef
+        const StateDef &sd = m_data->states[state];
+        if (!sd.onMousePress.name.isEmpty())
+            m_dispatcher->execute(sd.onMousePress.name, sd.onMousePress.params);
+        event->accept();
+        return;
+    } else if (event->button() == Qt::RightButton) {
+        close();
+        event->accept();
         return;
     }
     QWidget::mousePressEvent(event);
 }
 
 /*
+ * obsługa zdarzenia zmiany wymiarów ekranu
+ *
+bool SpriteWindow::event(QEvent *event)
+{
+    if (event->type() == QEvent::ScreenChange) {
+        updateScreenGeometry();
+    }
+    return QWidget::event(event);
+}
+*/
+
+/*
+ * aktualizacja wymiarów ekranu
+ */
+void SpriteWindow::updateScreenGeometry()
+{
+    if (auto *screen = QGuiApplication::screenAt(pos())) {
+        m_screenGeometry = screen->availableGeometry();
+    } else if (auto *primary = QGuiApplication::primaryScreen()) {
+        m_screenGeometry = primary->availableGeometry();
+    } else {
+        // fallback: 1920×1080
+        m_screenGeometry = QRect(0, 0, 1920, 1080);
+    }
+}
+
+/*
  * Destruktor
  */
-SpriteWindow::~SpriteWindow() {
+SpriteWindow::~SpriteWindow()
+{
     delete m_data;
     delete m_atlas;
     delete m_engine;
@@ -91,7 +136,8 @@ SpriteWindow::~SpriteWindow() {
 /*
  * Wysyła silnikowi animacji czasy wywołań.
  */
-void SpriteWindow::tick() {
+void SpriteWindow::tick()
+{
     qint64 now = m_elapsed.elapsed();
     double delta = (now - m_lastElapsed) / 1000.0;
     m_lastElapsed = now;
@@ -102,7 +148,8 @@ void SpriteWindow::tick() {
 /*
  * Przemalowanie okna
  */
-void SpriteWindow::paintEvent(QPaintEvent *) {
+void SpriteWindow::paintEvent(QPaintEvent *)
+{
     QPainter painter(this);
     painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
 
@@ -116,23 +163,37 @@ void SpriteWindow::paintEvent(QPaintEvent *) {
 }
 
 /*
- * przesuwa okno o x, y
+ * przesuwa okno o x, y, z limitem ekranu
  * wykorzystuje layer shell jeśli dostępny
  */
 void SpriteWindow::moveBy(double dx, double dy)
 {
-    // Calculate new absolute position
-    m_screenPos += QPoint(static_cast<int>(dx), static_cast<int>(dy));
+    QPoint newPos = m_screenPos + QPoint(static_cast<int>(dx), static_cast<int>(dy));
 
-    fprintf( stderr, "moveBy called: %f %f, newpos: %i %i \n", dx, dy, (pos().x() + static_cast<int>(dx)), pos().y() + static_cast<int>(dy));
-
-
-    // Try LayerShell first (Wayland)
-    if (auto *shellWin = LayerShellQt::Window::get(windowHandle())) {
-        fprintf(stderr, "Using layer-shell margins \n");
-        shellWin->setMargins(QMargins(m_screenPos.x(), m_screenPos.y(), 0, 0));
-    } else {
-        // Fallback for X11 / Windows / macOS
-        move(m_screenPos);
+    // limitowanie wymiarami
+    if (!m_screenGeometry.isNull()) {
+        newPos.setX(qBound(m_screenGeometry.left(),
+                           newPos.x(),
+                           m_screenGeometry.right() - width()));
+        newPos.setY(qBound(m_screenGeometry.top(),
+                           newPos.y(),
+                           m_screenGeometry.bottom() - height()));
     }
+
+    if (newPos != m_screenPos) {
+        m_screenPos = newPos;
+        if (auto *shellWin = LayerShellQt::Window::get(windowHandle())) {
+            shellWin->setMargins(QMargins(m_screenPos.x(), m_screenPos.y(), 0, 0));
+        } else {
+            move(m_screenPos);
+        }
+    }
+}
+
+/*
+ * przełączanie stanu dla obsługi eventów
+ */
+
+void SpriteWindow::switchState(const QString &stateName) {
+    m_engine->resetState(stateName);
 }

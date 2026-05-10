@@ -14,6 +14,9 @@ public:
     void reset();
     void update(double deltaTime);
 
+    void resetState(const QString &name);
+
+
     QString currentState;
     int currentFrameIndex = 0;
 
@@ -28,7 +31,6 @@ private:
     double m_frameTimer = 0;
     double m_currentFrameDuration = 0;
 
-    void resetState(const QString &name);
     void fireEvents(int frame);
     void dispatchAction(const QString &action, const QVariantMap &params = {});
 };

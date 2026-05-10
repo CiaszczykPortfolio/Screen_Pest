@@ -37,12 +37,26 @@ static const FieldMap<Transition> transMap {
      {"weight", [](auto& tr, auto v){ tr.weight = v.toDouble(); }}}
 };
 
-static const FieldMap<StateDef> stateMap {
-    {{"animation",      [](auto& sd, auto v){ sd.animation = v.toString(); }},
-     {"onEnterAction",  [](auto& sd, auto v){ sd.onEnterAction = v.toString(); }},
-     {"onExitAction",   [](auto& sd, auto v){ sd.onExitAction = v.toString(); }},
-     {"perTickAction",  [](auto& sd, auto v){ sd.perTickAction = v.toString(); }}}
+static const FieldMap<StateDef> stateMap
+{
+    {{"animation",      [](auto& sd, auto v){ sd.animation = v.toString(); }}}
 };
+
+/*
+ * Wczytanie akcji wywołującej metodę
+ */
+static ActionCall loadActionCall(const QJsonValue &val)
+{
+    ActionCall ac;
+    if (val.isString()) {
+        ac.name = val.toString();
+    } else if (val.isObject()) {
+        QJsonObject obj = val.toObject();
+        ac.name = obj.value("action").toString();
+        ac.params = obj.value("params").toObject().toVariantMap();
+    }
+    return ac;
+}
 
 bool BehaviourData::loadFromJson(const QString &jsonPath)
 {
@@ -96,6 +110,16 @@ bool BehaviourData::loadFromJson(const QString &jsonPath)
             sd.durationMax = dur[1].toDouble();
         }
 
+        QJsonArray loopsArr = obj.value("loops").toArray();
+        if (loopsArr.size() == 2) {
+            sd.loops = {loopsArr[0].toInt(), loopsArr[1].toInt()};
+        }
+
+        sd.onEnterAction  = loadActionCall(obj.value("onEnterAction"));
+        sd.onExitAction   = loadActionCall(obj.value("onExitAction"));
+        sd.perTickAction  = loadActionCall(obj.value("perTickAction"));
+        sd.onMousePress   = loadActionCall(obj.value("onMousePress"));
+
         // Transitions array
         QJsonArray trans = obj.value("transitions").toArray();
         for (auto tv : trans) {
@@ -104,6 +128,7 @@ bool BehaviourData::loadFromJson(const QString &jsonPath)
             sd.transitions.append(t);
         }
         states.insert(it.key(), sd);
+
     }
 
     return true;
